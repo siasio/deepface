@@ -11,6 +11,14 @@ def build_model():
     return face_detection
 
 
+def build_model_long():
+    import mediapipe as mp  # this is not a must dependency. do not import it in the global level.
+
+    mp_face_detection = mp.solutions.face_detection
+    face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.7, model_selection=1)
+    return face_detection
+
+
 def detect_face(face_detector, img, align=True):
     resp = []
 

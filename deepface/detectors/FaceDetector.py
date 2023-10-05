@@ -24,6 +24,7 @@ def build_model(detector_backend):
         "mtcnn": MtcnnWrapper.build_model,
         "retinaface": RetinaFaceWrapper.build_model,
         "mediapipe": MediapipeWrapper.build_model,
+        "mediapipe-long": MediapipeWrapper.build_model_long,
         "yolov8": YoloWrapper.build_model,
         "yunet": YunetWrapper.build_model,
     }
