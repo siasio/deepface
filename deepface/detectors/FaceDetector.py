@@ -69,6 +69,7 @@ def detect_faces(face_detector, detector_backend, img, align=True):
         "mtcnn": MtcnnWrapper.detect_face,
         "retinaface": RetinaFaceWrapper.detect_face,
         "mediapipe": MediapipeWrapper.detect_face,
+        "mediapipe-long": MediapipeWrapper.detect_face,
         "yolov8": YoloWrapper.detect_face,
         "yunet": YunetWrapper.detect_face,
     }

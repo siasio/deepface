@@ -29,6 +29,8 @@ from deepface.basemodels import (
 from deepface.extendedmodels import Age, Gender, Race, Emotion
 from deepface.commons import functions, realtime, distance as dst
 
+# from tensorflow.keras.preprocessing import image
+
 # -----------------------------------
 # configurations for dependencies
 
@@ -616,6 +618,49 @@ def find(
     return resp_obj
 
 
+def crop_and_resize(cur_image, target_size, grayscale=False):
+    if cur_image.shape[0] > 0 and cur_image.shape[1] > 0:
+        factor_0 = target_size[0] / cur_image.shape[0]
+        factor_1 = target_size[1] / cur_image.shape[1]
+        factor = min(factor_0, factor_1)
+
+        dsize = (
+            int(cur_image.shape[1] * factor),
+            int(cur_image.shape[0] * factor),
+        )
+        cur_image = cv2.resize(cur_image, dsize)
+
+        diff_0 = target_size[0] - cur_image.shape[0]
+        diff_1 = target_size[1] - cur_image.shape[1]
+        if grayscale is False:
+            # Put the base image in the middle of the padded image
+            cur_image = np.pad(
+                cur_image,
+                (
+                    (diff_0 // 2, diff_0 - diff_0 // 2),
+                    (diff_1 // 2, diff_1 - diff_1 // 2),
+                    (0, 0),
+                ),
+                "constant",
+            )
+        else:
+            cur_image = np.pad(
+                cur_image,
+                (
+                    (diff_0 // 2, diff_0 - diff_0 // 2),
+                    (diff_1 // 2, diff_1 - diff_1 // 2),
+                ),
+                "constant",
+            )
+
+    # double check: if target image is not still the same size with target.
+    if cur_image.shape[0:2] != target_size:
+        cur_image = cv2.resize(cur_image, target_size)
+    img_pixels = np.expand_dims(cur_image, axis=0).astype(float)
+    img_pixels /= 255  # normalize input in [0, 1]
+    return img_pixels
+
+
 def represent(
     img_path,
     model_name="VGG-Face",
@@ -679,10 +724,11 @@ def represent(
         if len(img.shape) == 4:
             img = img[0]  # e.g. (1, 224, 224, 3) to (224, 224, 3)
         if len(img.shape) == 3:
-            img = cv2.resize(img, target_size)
-            img = np.expand_dims(img, axis=0)
+            img = crop_and_resize(img, target_size, grayscale=False)
+            # img = cv2.resize(img, target_size)
+            # img = np.expand_dims(img, axis=0)
         # --------------------------------
-        img_region = [0, 0, img.shape[1], img.shape[0]]
+        img_region = [0, 0, img.shape[2], img.shape[1]]
         img_objs = [(img, img_region, 0)]
     # ---------------------------------
 
