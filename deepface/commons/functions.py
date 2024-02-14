@@ -125,6 +125,7 @@ def extract_faces(
     grayscale=False,
     enforce_detection=True,
     align=True,
+    process_face=True,
 ):
     """Extract faces from an image.
 
@@ -137,6 +138,8 @@ def extract_faces(
         Defaults to False.
         enforce_detection (bool, optional): whether to enforce face detection. Defaults to True.
         align (bool, optional): whether to align the extracted faces. Defaults to True.
+        process_face (boolean): whether to crop out the face region from the
+        passed image and output it resized to target_size
 
     Raises:
         ValueError: if face could not be detected and enforce_detection is True.
@@ -170,54 +173,56 @@ def extract_faces(
 
     for current_img, current_region, confidence in face_objs:
         if current_img.shape[0] > 0 and current_img.shape[1] > 0:
-            if grayscale is True:
-                current_img = cv2.cvtColor(current_img, cv2.COLOR_BGR2GRAY)
+            if process_face:
+                if grayscale is True:
+                    current_img = cv2.cvtColor(current_img, cv2.COLOR_BGR2GRAY)
 
-            # resize and padding
-            if current_img.shape[0] > 0 and current_img.shape[1] > 0:
-                factor_0 = target_size[0] / current_img.shape[0]
-                factor_1 = target_size[1] / current_img.shape[1]
-                factor = min(factor_0, factor_1)
+                # resize and padding
+                if current_img.shape[0] > 0 and current_img.shape[1] > 0:
+                    factor_0 = target_size[0] / current_img.shape[0]
+                    factor_1 = target_size[1] / current_img.shape[1]
+                    factor = min(factor_0, factor_1)
 
-                dsize = (
-                    int(current_img.shape[1] * factor),
-                    int(current_img.shape[0] * factor),
-                )
-                current_img = cv2.resize(current_img, dsize)
-
-                diff_0 = target_size[0] - current_img.shape[0]
-                diff_1 = target_size[1] - current_img.shape[1]
-                if grayscale is False:
-                    # Put the base image in the middle of the padded image
-                    current_img = np.pad(
-                        current_img,
-                        (
-                            (diff_0 // 2, diff_0 - diff_0 // 2),
-                            (diff_1 // 2, diff_1 - diff_1 // 2),
-                            (0, 0),
-                        ),
-                        "constant",
+                    dsize = (
+                        int(current_img.shape[1] * factor),
+                        int(current_img.shape[0] * factor),
                     )
-                else:
-                    current_img = np.pad(
-                        current_img,
-                        (
-                            (diff_0 // 2, diff_0 - diff_0 // 2),
-                            (diff_1 // 2, diff_1 - diff_1 // 2),
-                        ),
-                        "constant",
-                    )
+                    current_img = cv2.resize(current_img, dsize)
 
-            # double check: if target image is not still the same size with target.
-            if current_img.shape[0:2] != target_size:
-                current_img = cv2.resize(current_img, target_size)
+                    diff_0 = target_size[0] - current_img.shape[0]
+                    diff_1 = target_size[1] - current_img.shape[1]
+                    if grayscale is False:
+                        # Put the base image in the middle of the padded image
+                        current_img = np.pad(
+                            current_img,
+                            (
+                                (diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2),
+                                (0, 0),
+                            ),
+                            "constant",
+                        )
+                    else:
+                        current_img = np.pad(
+                            current_img,
+                            (
+                                (diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2),
+                            ),
+                            "constant",
+                        )
 
-            # normalizing the image pixels
-            # what this line doing? must?
-            img_pixels = image.img_to_array(current_img)
-            img_pixels = np.expand_dims(img_pixels, axis=0)
-            img_pixels /= 255  # normalize input in [0, 1]
+                # double check: if target image is not still the same size with target.
+                if current_img.shape[0:2] != target_size:
+                    current_img = cv2.resize(current_img, target_size)
 
+                # normalizing the image pixels
+                # what this line doing? must?
+                img_pixels = image.img_to_array(current_img)
+                img_pixels = np.expand_dims(img_pixels, axis=0)
+                img_pixels /= 255  # normalize input in [0, 1]
+            else:
+                img_pixels = None
             # int cast is for the exception - object of type 'float32' is not JSON serializable
             region_obj = {
                 "x": int(current_region[0]),

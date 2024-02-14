@@ -816,6 +816,7 @@ def extract_faces(
     enforce_detection=True,
     align=True,
     grayscale=False,
+    process_face=True,
 ):
     """
     This function applies pre-processing stages of a face recognition pipeline
@@ -840,6 +841,9 @@ def extract_faces(
 
             grayscale (boolean): extracting faces in rgb or gray scale
 
+            process_face (boolean): whether to crop out the face region from the
+            passed image and output it resized to target_size
+
     Returns:
             list of dictionaries. Each dictionary will have facial image itself,
             extracted area from the original image and confidence score.
@@ -854,16 +858,21 @@ def extract_faces(
         grayscale=grayscale,
         enforce_detection=enforce_detection,
         align=align,
+        process_face=process_face,
     )
 
     for img, region, confidence in img_objs:
         resp_obj = {}
 
-        # discard expanded dimension
-        if len(img.shape) == 4:
-            img = img[0]
+        if process_face:
+            # discard expanded dimension
+            if len(img.shape) == 4:
+                img = img[0]
+            face_img = img[:, :, ::-1]
+        else:
+            face_img = None
 
-        resp_obj["face"] = img[:, :, ::-1]
+        resp_obj["face"] = face_img
         resp_obj["facial_area"] = region
         resp_obj["confidence"] = confidence
         resp_objs.append(resp_obj)
